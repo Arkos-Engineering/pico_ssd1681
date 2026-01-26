@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(ssd1681_pico C CXX ASM)
+project(pico_ssd1681 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -13,12 +13,11 @@ option(USE_3WIRE_SPI "Use 3-wire SPI mode (9-bit frames)" OFF)
 
 # Main library
 add_library(ssd1681 STATIC
-    ssd1681_pico.c
+    pico_ssd1681.c
 )
 
 target_include_directories(ssd1681 PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
-    ${CMAKE_CURRENT_LIST_DIR}/../src  # For font data
 )
 
 target_link_libraries(ssd1681

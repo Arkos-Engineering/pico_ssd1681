@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "ssd1681_pico.h"
+#include "pico_ssd1681.h"
 
 int main(void)
 {
