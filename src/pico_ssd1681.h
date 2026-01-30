@@ -76,6 +76,13 @@ void ssd1681_deinit(void);
 int ssd1681_clear(ssd1681_color_t color);
 
 /**
+ * @brief Write internal buffer to display RAM
+ * @param color Color plane to write
+ * @return 0 on success
+ */
+int ssd1681_write_buffer(ssd1681_color_t color);
+
+/**
  * @brief Write a single point
  * @param color Color plane
  * @param x X coordinate (0-199)

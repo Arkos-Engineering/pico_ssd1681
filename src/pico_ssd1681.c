@@ -306,14 +306,17 @@ int ssd1681_init(const ssd1681_config_t *config)
     ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
     ssd1681_write_data(0x00);
     ssd1681_write_data(0x80);
-    
-    /* Master activation */
-    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
-    ssd1681_wait_busy();
+    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
+    // ssd1681_write_data(0xF7);
     
     /* Clear framebuffers */
     memset(g_ssd1681.black_gram, 0xFF, sizeof(g_ssd1681.black_gram));
     memset(g_ssd1681.red_gram, 0xFF, sizeof(g_ssd1681.red_gram));
+
+    /* Master activation */
+    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
+    ssd1681_wait_busy();
+    
     
     g_ssd1681.initialized = true;
     return 0;
@@ -358,6 +361,31 @@ int ssd1681_clear(ssd1681_color_t color)
     ssd1681_set_cursor(0, 0);
     ssd1681_write_cmd((color == SSD1681_COLOR_BLACK) ? CMD_WRITE_RAM_BW : CMD_WRITE_RAM_RED);
     ssd1681_write_data_buf(gram, DISPLAY_HEIGHT * BYTES_PER_ROW);
+
+    ssd1681_update();
+    
+    return 0;
+}
+
+/**
+ * @brief Write internal buffer to display RAM
+ */
+int ssd1681_write_buffer(ssd1681_color_t color)
+{
+    if (!g_ssd1681.initialized) return -1;
+    
+    uint8_t *gram = (color == SSD1681_COLOR_BLACK) ? 
+                    &g_ssd1681.black_gram[0][0] : &g_ssd1681.red_gram[0][0];
+    
+    /* Set write window to full display */
+    ssd1681_set_window(0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+    
+    /* Set cursor to start */
+    ssd1681_set_cursor(0, 0);
+    
+    /* Write buffer to display RAM */
+    ssd1681_write_cmd((color == SSD1681_COLOR_BLACK) ? CMD_WRITE_RAM_BW : CMD_WRITE_RAM_RED);
+    ssd1681_write_data_buf(gram, DISPLAY_HEIGHT * BYTES_PER_ROW);
     
     return 0;
 }
@@ -368,11 +396,17 @@ int ssd1681_clear(ssd1681_color_t color)
 int ssd1681_update(void)
 {
     if (!g_ssd1681.initialized) return -1;
-    
-    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
-    ssd1681_write_data(0xF7);
-    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
+
     ssd1681_wait_busy();
+    
+    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
+    ssd1681_write_data(0x00);
+    ssd1681_write_data(0x80);
+    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
+    // ssd1681_write_data(0xFF);
+    
+    /* Master activation */
+    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
     
     return 0;
 }
