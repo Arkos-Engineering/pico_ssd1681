@@ -309,14 +309,13 @@ int ssd1681_init(const ssd1681_config_t *config)
     // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
     // ssd1681_write_data(0xF7);
     
-    /* Clear framebuffers */
-    memset(g_ssd1681.black_gram, 0xFF, sizeof(g_ssd1681.black_gram));
-    memset(g_ssd1681.red_gram, 0xFF, sizeof(g_ssd1681.red_gram));
-
     /* Master activation */
     ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
     ssd1681_wait_busy();
     
+    /* Clear framebuffers */
+    memset(g_ssd1681.black_gram, 0xFF, sizeof(g_ssd1681.black_gram));
+    memset(g_ssd1681.red_gram, 0xFF, sizeof(g_ssd1681.red_gram));
     
     g_ssd1681.initialized = true;
     return 0;
@@ -396,14 +395,12 @@ int ssd1681_write_buffer(ssd1681_color_t color)
 int ssd1681_update(void)
 {
     if (!g_ssd1681.initialized) return -1;
-
-    ssd1681_wait_busy();
     
-    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
-    ssd1681_write_data(0x00);
-    ssd1681_write_data(0x80);
-    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
-    // ssd1681_write_data(0xFF);
+    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
+    // ssd1681_write_data(0x00);
+    // ssd1681_write_data(0x80);
+    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
+    ssd1681_write_data(0xFF);
     
     /* Master activation */
     ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
