@@ -24,6 +24,44 @@ typedef enum {
     SSD1681_SPI_3WIRE = 1,  /**< 3-wire SPI with 9-bit frames (no D/C pin) */
 } ssd1681_spi_mode_t;
 
+typedef enum {
+    SSD1681_SOFTSTART_TIME_10MS = 0,
+    SSD1681_SOFTSTART_TIME_20MS = 1,
+    SSD1681_SOFTSTART_TIME_30MS = 2,
+    SSD1681_SOFTSTART_TIME_40MS = 3,
+
+} ssd1681_softstart_time_t;
+
+typedef enum {
+    SSD1681_SOFTSTART_MIN_OFF_2_6 = 0b0100,
+    SSD1681_SOFTSTART_MIN_OFF_3_2 = 0b0101,
+    SSD1681_SOFTSTART_MIN_OFF_3_9 = 0b0110,
+    SSD1681_SOFTSTART_MIN_OFF_4_6 = 0b0111,
+    SSD1681_SOFTSTART_MIN_OFF_5_4 = 0b1000,
+    SSD1681_SOFTSTART_MIN_OFF_6_3 = 0b1001,
+    SSD1681_SOFTSTART_MIN_OFF_7_3 = 0b1010,
+    SSD1681_SOFTSTART_MIN_OFF_8_4 = 0b1011,
+    SSD1681_SOFTSTART_MIN_OFF_9_8 = 0b1100,
+    SSD1681_SOFTSTART_MIN_OFF_11_5 = 0b1101,
+    SSD1681_SOFTSTART_MIN_OFF_13_8 = 0b1110,
+    SSD1681_SOFTSTART_MIN_OFF_16_5 = 0b1111
+
+
+} ssd1681_softstart_min_off_time_t;
+
+typedef enum {
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_0 = 0,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_1 = 1,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_2 = 2,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_3 = 3,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_4 = 4,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_5 = 5,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_6 = 6,
+    SSD1681_SOFTSTART_DRIVE_STRENGTH_7 = 7,
+
+
+} ssd1681_softstart_drive_strength_t;
+
 /**
  * @brief Pin configuration structure
  */
@@ -144,10 +182,24 @@ int ssd1681_draw_picture(ssd1681_color_t color, uint8_t left, uint8_t top,
                          uint8_t right, uint8_t bottom, const uint8_t *img);
 
 /**
+ * @brief Set soft start parameters
+ * @param strength Drive strength
+ * @param time Soft start time
+ * @param min_off Minimum off time
+ */
+int ssd1681_set_soft_start(ssd1681_softstart_drive_strength_t strength,  ssd1681_softstart_time_t time, ssd1681_softstart_min_off_time_t min_off);
+
+/**
  * @brief Update the display (refresh)
  * @return 0 on success
  */
-int ssd1681_update(void);
+int ssd1681_update(bool full_update);
+
+/**
+ * @brief write buffer and update the display (refresh) only if the display is ready, otherwise do nothing
+ * @return 0 on update, -1 if display is busy
+ */
+int ssd1681_write_buffer_and_update_if_ready(bool full_update);
 
 /**
  * @brief Get default configuration for 4-wire SPI

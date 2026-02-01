@@ -13,6 +13,8 @@
 #include "pico/stdlib.h"
 #include <string.h>
 
+#include <stdio.h>
+
 #define DISPLAY_WIDTH  200
 #define DISPLAY_HEIGHT 200
 #define BYTES_PER_ROW  (DISPLAY_WIDTH / 8)
@@ -148,12 +150,17 @@ static void ssd1681_reset(void)
  */
 static void ssd1681_wait_busy(void)
 {
-    uint32_t timeout = 2000;  /* 2000 * 10ms = 20 seconds max */
-    
+
+    int32_t timeout = 1000000;  // 10 second timeout
+
     while (gpio_get(g_ssd1681.config.pin_busy)) {
-        sleep_ms(10);
-        if (--timeout == 0) break;
+        sleep_us(10);
+        if (--timeout <= 0) {
+            break;
+        }
     }
+
+    sleep_us(100); // Extra delay to ensure ready. This apparently is a known issue.
 }
 
 /**
@@ -235,6 +242,7 @@ int ssd1681_init(const ssd1681_config_t *config)
     
     /* Initialize SPI */
     uint32_t actual_baud = spi_init(g_ssd1681.spi, config->spi_baudrate);
+    printf("SSD1681: Requested SPI baudrate %u Hz, actual %u Hz\n", config->spi_baudrate, actual_baud);
     if (actual_baud == 0) return -3;
     
     if (config->spi_mode == SSD1681_SPI_3WIRE) {
@@ -286,6 +294,8 @@ int ssd1681_init(const ssd1681_config_t *config)
     ssd1681_write_data(0xC7);  /* 200 - 1 */
     ssd1681_write_data(0x00);
     ssd1681_write_data(0x00);
+
+    // ssd1681_set_soft_start(SSD1681_SOFTSTART_DRIVE_STRENGTH_0, SSD1681_SOFTSTART_TIME_40MS, SSD1681_SOFTSTART_MIN_OFF_4_6);
     
     /* Data entry mode */
     ssd1681_write_cmd(CMD_DATA_ENTRY_MODE);
@@ -303,14 +313,14 @@ int ssd1681_init(const ssd1681_config_t *config)
     ssd1681_write_data(0x80);  /* Internal sensor */
     
     /* Display update control */
-    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
-    ssd1681_write_data(0x00);
-    ssd1681_write_data(0x80);
+    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
+    // ssd1681_write_data(0x00);
+    // ssd1681_write_data(0x80);
     // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
-    // ssd1681_write_data(0xF7);
+    // ssd1681_write_data(0xFF);
     
     /* Master activation */
-    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
+    // ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
     ssd1681_wait_busy();
     
     /* Clear framebuffers */
@@ -355,13 +365,13 @@ int ssd1681_clear(ssd1681_color_t color)
                     &g_ssd1681.black_gram[0][0] : &g_ssd1681.red_gram[0][0];
     
     memset(gram, 0xFF, DISPLAY_HEIGHT * BYTES_PER_ROW);
-    
-    /* Write to RAM */
-    ssd1681_set_cursor(0, 0);
-    ssd1681_write_cmd((color == SSD1681_COLOR_BLACK) ? CMD_WRITE_RAM_BW : CMD_WRITE_RAM_RED);
-    ssd1681_write_data_buf(gram, DISPLAY_HEIGHT * BYTES_PER_ROW);
 
-    ssd1681_update();
+    // Write to RAM
+    // ssd1681_set_cursor(0, 0);
+    // ssd1681_write_cmd((color == SSD1681_COLOR_BLACK) ? CMD_WRITE_RAM_BW : CMD_WRITE_RAM_RED);
+    // ssd1681_write_data_buf(gram, DISPLAY_HEIGHT * BYTES_PER_ROW);
+
+    // ssd1681_update();
     
     return 0;
 }
@@ -375,6 +385,8 @@ int ssd1681_write_buffer(ssd1681_color_t color)
     
     uint8_t *gram = (color == SSD1681_COLOR_BLACK) ? 
                     &g_ssd1681.black_gram[0][0] : &g_ssd1681.red_gram[0][0];
+
+    ssd1681_wait_busy();
     
     /* Set write window to full display */
     ssd1681_set_window(0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
@@ -390,21 +402,83 @@ int ssd1681_write_buffer(ssd1681_color_t color)
 }
 
 /**
- * @brief Update the display
+ * @brief Set soft start parameters 
  */
-int ssd1681_update(void)
+int ssd1681_set_soft_start(ssd1681_softstart_drive_strength_t strength,  ssd1681_softstart_time_t time, ssd1681_softstart_min_off_time_t min_off)
 {
     if (!g_ssd1681.initialized) return -1;
     
-    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
-    // ssd1681_write_data(0x00);
-    // ssd1681_write_data(0x80);
+    ssd1681_write_cmd(CMD_BOOSTER_SOFT_START);
+    for (int i = 0; i < 3; i++) {
+        ssd1681_write_data(strength << 4 | min_off);
+    }
+    ssd1681_write_data(time);
+
+    return 0;
+}
+
+/**
+ * @brief Update the display if display is ready
+ */
+int ssd1681_write_buffer_and_update_if_ready(bool full_update)
+{
+    if (!g_ssd1681.initialized) return -1;
+
+    if (gpio_get(g_ssd1681.config.pin_busy)) {
+        return -1; // Display is busy
+    }
+
+    ssd1681_write_buffer(SSD1681_COLOR_BLACK);
+
+    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
+    ssd1681_write_data(0x00);
+    ssd1681_write_data(0x80);
+
     ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
-    ssd1681_write_data(0xFF);
+    if (full_update) {
+        ssd1681_write_data(0xF6);
+        // ssd1681_write_data(0b11111111);
+    } else {
+        ssd1681_write_data(0xFE);
+    }
+    /* Master activation */
+    ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
+    return 0;
+}
+
+
+/**
+ * @brief Update the display
+ */
+int ssd1681_update(bool full_update)
+{
+    if (!g_ssd1681.initialized) return -1;
+
+    ssd1681_wait_busy();
+
+    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
+    ssd1681_write_data(0x00);
+    ssd1681_write_data(0x80);
+
+    ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
+    if (full_update) {
+        ssd1681_write_data(0xF6);
+    } else {
+        ssd1681_write_data(0xFE);
+    }
+
+    //THE BELOW CODE WORKS BUT DOES NOT POWER DOWN THE DISPLAY AFTER UPDATE
+    // ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL_2);
+    // if (full_update) {
+    //     ssd1681_write_data(0xF4);
+    //     // ssd1681_write_data(0b11111111);
+    // } else {
+    //     ssd1681_write_data(0xFC);
+    // }
     
     /* Master activation */
     ssd1681_write_cmd(CMD_MASTER_ACTIVATION);
-    
+    // ssd1681_wait_busy();
     return 0;
 }
 

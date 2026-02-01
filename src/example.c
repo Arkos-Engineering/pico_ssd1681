@@ -44,7 +44,7 @@ int main(void)
     printf("Clearing display...\n");
     ssd1681_clear(SSD1681_COLOR_BLACK);
     ssd1681_clear(SSD1681_COLOR_RED);
-    ssd1681_update();
+    ssd1681_update(1);
     
     /* Draw a rectangle */
     printf("Drawing rectangle...\n");
@@ -68,7 +68,7 @@ int main(void)
     
     /* Update display */
     printf("Updating display (this takes ~2-3 seconds)...\n");
-    ssd1681_update();
+    ssd1681_update(1);
     
     printf("\n=== Test Complete ===\n");
     printf("Display should show:\n");
