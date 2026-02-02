@@ -7,12 +7,12 @@
  */
 
 #include "pico_ssd1681.h"
-#include "ssd1681_font.h"
+#include "pico_ssd1681_font.h"
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
-#include <string.h>
 
+#include <string.h>
 #include <stdio.h>
 
 #define DISPLAY_WIDTH  200
@@ -283,17 +283,19 @@ int ssd1681_init(const ssd1681_config_t *config)
     
     /* Reset display */
     ssd1681_reset();
+    sleep_ms(10);
     ssd1681_wait_busy();
     
     /* Initialize display */
     ssd1681_write_cmd(CMD_SW_RESET);
+    sleep_ms(10);
     ssd1681_wait_busy();
     
     /* Driver output control */
     ssd1681_write_cmd(CMD_DRIVER_OUTPUT_CONTROL);
     ssd1681_write_data(0xC7);  /* 200 - 1 */
     ssd1681_write_data(0x00);
-    ssd1681_write_data(0x00);
+    ssd1681_write_data(0x02);
 
     // ssd1681_set_soft_start(SSD1681_SOFTSTART_DRIVE_STRENGTH_0, SSD1681_SOFTSTART_TIME_40MS, SSD1681_SOFTSTART_MIN_OFF_4_6);
     
@@ -392,6 +394,7 @@ int ssd1681_write_buffer(ssd1681_color_t color)
     ssd1681_set_window(0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
     
     /* Set cursor to start */
+    // ssd1681_set_cursor(0, DISPLAY_HEIGHT - 1);
     ssd1681_set_cursor(0, 0);
     
     /* Write buffer to display RAM */
@@ -493,7 +496,7 @@ int ssd1681_write_point(ssd1681_color_t color, uint8_t x, uint8_t y, uint8_t dat
     uint8_t *gram = (color == SSD1681_COLOR_BLACK) ? 
                     &g_ssd1681.black_gram[0][0] : &g_ssd1681.red_gram[0][0];
     
-    uint16_t byte_index = y * BYTES_PER_ROW + (x / 8);
+    uint16_t byte_index = (DISPLAY_HEIGHT - 1 - y) * BYTES_PER_ROW + (x / 8);
     uint8_t bit_index = 7 - (x % 8);
     
     if (data) {
@@ -530,13 +533,37 @@ int ssd1681_read_point(ssd1681_color_t color, uint8_t x, uint8_t y, uint8_t *dat
  */
 int ssd1681_draw_string(ssd1681_color_t color, uint8_t x, uint8_t y,
                         const char *str, uint16_t len, uint8_t data,
-                        ssd1681_font_t font)
+                        ssd1681_font_size_t font_size)
 {
     if (!g_ssd1681.initialized) return -1;
     if (!str) return -2;
     
-    /* This is a placeholder - full font rendering requires font bitmap data */
-    /* You would need to include the font data from driver_ssd1681_font.h */
+    for(uint16_t i = 0; i < len; i++) {
+        char c = str[i];
+        if (c > 127) continue;  /* Skip unsupported characters */
+        
+        const char *char_bitmap = font_basic_8x8[(uint8_t)c];
+        
+        for (uint8_t row = 0; row < 8; row++) {
+            for (uint8_t col = 0; col < 8; col++) {
+                if (char_bitmap[row] & (1 << col)) {
+                    ssd1681_write_point(color, x + col, y + row, data);
+                } else {
+                    ssd1681_write_point(color, x + col, y + row, !data);
+                }
+            }
+        }
+        
+        x += 8;  /* Move to next character position */
+        if (x + 8 > DISPLAY_WIDTH) {
+            x = 0;
+            y += 8;
+            if (y + 8 > DISPLAY_HEIGHT) {
+                break;  /* No more space */
+            }
+        }
+    }
+
     
     return 0;
 }

@@ -89,10 +89,10 @@ typedef enum {
  * @brief Font size
  */
 typedef enum {
-    SSD1681_FONT_12 = 12,
-    SSD1681_FONT_16 = 16,
-    SSD1681_FONT_24 = 24,
-} ssd1681_font_t;
+    SSD1681_FONT_8 = 1,
+    SSD1681_FONT_16 = 2,
+    SSD1681_FONT_24 = 3,
+} ssd1681_font_size_t;
 
 /**
  * @brief Initialize the display
@@ -153,7 +153,7 @@ int ssd1681_read_point(ssd1681_color_t color, uint8_t x, uint8_t y, uint8_t *dat
  */
 int ssd1681_draw_string(ssd1681_color_t color, uint8_t x, uint8_t y, 
                         const char *str, uint16_t len, uint8_t data, 
-                        ssd1681_font_t font);
+                        ssd1681_font_size_t font);
 
 /**
  * @brief Fill a rectangle
