@@ -538,7 +538,12 @@ int ssd1681_draw_string(ssd1681_color_t color, uint8_t x, uint8_t y,
     if (!g_ssd1681.initialized) return -1;
     if (!str) return -2;
 
-    uint8_t char_size_pixels = 8*font_size; // Assuming 8 pixels width per character
+    uint8_t char_size_pixels;
+    if (font_size >= 100){
+        char_size_pixels = ((font_size - 100)*8)+4;
+    } else{
+        char_size_pixels = 8*font_size; // Assuming 8 pixels width per character
+    }
     
     for(uint16_t i = 0; i < len; i++) {
         char c = str[i];
@@ -548,12 +553,26 @@ int ssd1681_draw_string(ssd1681_color_t color, uint8_t x, uint8_t y,
         
         for (uint8_t row = 0; row < char_size_pixels; row+=font_size) {
             for (uint8_t col = 0; col < char_size_pixels; col+=font_size) {
-                for(int i=0; i<font_size; i++){
-                    for (int j=0; j<font_size; j++){
-                        if (char_bitmap[row/font_size] & (1 << (col/font_size))) {
-                            ssd1681_write_point(color, x + col + i, y + row + j, data);
-                        } else {
-                            ssd1681_write_point(color, x + col + i, y + row + j, !data);
+                if(font_size >= 100){
+                    // Interpolated scaling
+                    // for(int i=0; i<target_size; i++){
+                        // for (int j=0; j<target_size; j++){
+                            // if (char_bitmap[(row/target_size*2)/3]) {
+                                // ssd1681_write_point(color, x + col + i, y + row + j, data);
+                            // } else {
+                                // ssd1681_write_point(color, x + col + i, y + row + j, !data);
+                            // }
+                        // }
+                    // }
+                } else{
+                    // Direct scaling
+                    for(int i=0; i<font_size; i++){
+                        for (int j=0; j<font_size; j++){
+                            if (char_bitmap[row/font_size] & (1 << (col/font_size))) {
+                                ssd1681_write_point(color, x + col + i, y + row + j, data);
+                            } else {
+                                ssd1681_write_point(color, x + col + i, y + row + j, !data);
+                            }
                         }
                     }
                 }

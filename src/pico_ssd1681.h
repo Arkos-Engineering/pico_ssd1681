@@ -86,7 +86,7 @@ typedef enum {
 } ssd1681_color_t;
 
 /**
- * @brief Font size
+ * @brief Font size. 1-99 are direct scaling, 100+ are interpolated sizes
  */
 typedef enum {
     SSD1681_FONT_8 = 1,
@@ -95,6 +95,12 @@ typedef enum {
     SSD1681_FONT_32 = 4,
     SSD1681_FONT_40 = 5,
     SSD1681_FONT_48 = 6,
+
+    SSD1681_FONT_12 = 101,
+    SSD1681_FONT_20 = 102,
+    SSD1681_FONT_28 = 103,
+    SSD1681_FONT_36 = 104,
+    SSD1681_FONT_44 = 105,
 
 } ssd1681_font_size_t;
 
