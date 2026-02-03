@@ -92,6 +92,10 @@ typedef enum {
     SSD1681_FONT_8 = 1,
     SSD1681_FONT_16 = 2,
     SSD1681_FONT_24 = 3,
+    SSD1681_FONT_32 = 4,
+    SSD1681_FONT_40 = 5,
+    SSD1681_FONT_48 = 6,
+
 } ssd1681_font_size_t;
 
 /**
