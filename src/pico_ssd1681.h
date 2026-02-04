@@ -86,6 +86,20 @@ typedef enum {
 } ssd1681_color_t;
 
 /**
+ * @brief Display update type
+ * @note UPDATE_FAST_PARTIAL: only draws new pixels (immidiate, ghosting likely)
+ * @note UPDATE_CLEAN_FULL: calls display firmware to full refresh the display then draws all (~4 seconds, minimal ghosting)
+ * @note UPDATE_FAST_FULL: flashes screen to black once, then draws all (~2 second, very little ghosting)
+ * @note UPDATE_CLEAN_FULL_AGGRESSIVE: calls display firmware to full refresh the display twice then draws all (~8 seconds, zero ghosting)
+ */
+enum ssd1681_update_type_t{
+    SSD1681_UPDATE_FAST_PARTIAL = 0b00,
+    SSD1681_UPDATE_CLEAN_FULL = 0b01,
+    SSD1681_UPDATE_FAST_FULL = 0b10,
+    SSD1681_UPDATE_CLEAN_FULL_AGGRESSIVE = 0b11,
+};
+
+/**
  * @brief Font size. missing sizes can be passed as an int, however the below are known to look acceptable
  */
 enum ssd1681_font_size_t{
@@ -201,13 +215,13 @@ int ssd1681_set_soft_start(ssd1681_softstart_drive_strength_t strength,  ssd1681
  * @brief Update the display (refresh)
  * @return 0 on success
  */
-int ssd1681_update(bool full_update);
+int ssd1681_update(uint8_t update_type);
 
 /**
  * @brief write buffer and update the display (refresh) only if the display is ready, otherwise do nothing
  * @return 0 on update, -1 if display is busy
  */
-int ssd1681_write_buffer_and_update_if_ready(bool full_update);
+int ssd1681_write_buffer_and_update_if_ready(uint8_t update_type);
 
 /**
  * @brief Get default configuration for 4-wire SPI
