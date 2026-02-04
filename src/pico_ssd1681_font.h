@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+#define FONT_BASIC_SIZE 8
 //8x8 Basic Font
 char font_basic_8x8[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0000 (nul)

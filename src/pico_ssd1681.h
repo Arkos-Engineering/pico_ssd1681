@@ -86,23 +86,21 @@ typedef enum {
 } ssd1681_color_t;
 
 /**
- * @brief Font size. 1-99 are direct scaling, 100+ are interpolated sizes
+ * @brief Font size. missing sizes can be passed as an int, however the below are known to look acceptable
  */
-typedef enum {
-    SSD1681_FONT_8 = 1,
-    SSD1681_FONT_16 = 2,
-    SSD1681_FONT_24 = 3,
-    SSD1681_FONT_32 = 4,
-    SSD1681_FONT_40 = 5,
-    SSD1681_FONT_48 = 6,
-
-    SSD1681_FONT_12 = 101,
-    SSD1681_FONT_20 = 102,
-    SSD1681_FONT_28 = 103,
-    SSD1681_FONT_36 = 104,
-    SSD1681_FONT_44 = 105,
-
-} ssd1681_font_size_t;
+enum ssd1681_font_size_t{
+    SSD1681_FONT_8 = 8,
+    SSD1681_FONT_12 = 12,
+    SSD1681_FONT_16 = 16,
+    SSD1681_FONT_20 = 20,
+    SSD1681_FONT_24 = 24,
+    SSD1681_FONT_28 = 28,
+    SSD1681_FONT_32 = 32,
+    SSD1681_FONT_36 = 36,
+    SSD1681_FONT_40 = 40,
+    SSD1681_FONT_44 = 44,
+    SSD1681_FONT_48 = 48,
+};
 
 /**
  * @brief Initialize the display
@@ -163,7 +161,7 @@ int ssd1681_read_point(ssd1681_color_t color, uint8_t x, uint8_t y, uint8_t *dat
  */
 int ssd1681_draw_string(ssd1681_color_t color, uint8_t x, uint8_t y, 
                         const char *str, uint16_t len, uint8_t data, 
-                        ssd1681_font_size_t font);
+                        uint8_t font);
 
 /**
  * @brief Fill a rectangle
