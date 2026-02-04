@@ -457,7 +457,7 @@ int ssd1681_write_buffer_and_update_if_ready(uint8_t update_type)
     } else if(update_type == SSD1681_UPDATE_FAST_FULL) {
         ssd1681_write_cmd(CMD_WRITE_RAM_BW);
         for (uint16_t i = 0; i < sizeof(g_ssd1681.black_gram); i++) {
-            ssd1681_write_data(0x00);
+            ssd1681_write_data(0xFF);
         }
 
         ssd1681_write_cmd(CMD_DISPLAY_UPDATE_CONTROL);
