@@ -58,6 +58,7 @@ static void ssd1681_reset(void);
 static void ssd1681_wait_busy(void);
 static void ssd1681_set_window(uint8_t x_start, uint8_t y_start, uint8_t x_end, uint8_t y_end);
 static void ssd1681_set_cursor(uint8_t x, uint8_t y);
+static void ssd1681_set_spi_mode_and_clk(ssd1681_config_t *config);
 
 /**
  * @brief Write a byte via SPI (handles both 3-wire and 4-wire)
@@ -87,6 +88,7 @@ static void ssd1681_spi_write_byte(uint8_t data)
  */
 static void ssd1681_write_cmd(uint8_t cmd)
 {
+    ssd1681_set_spi_mode_and_clk(&g_ssd1681.config);  /* Ensure correct SPI mode is set */
     if (g_ssd1681.config.spi_mode == SSD1681_SPI_3WIRE) {
         g_ssd1681.dc_state = 0;  /* Command mode */
     } else {
@@ -103,6 +105,7 @@ static void ssd1681_write_cmd(uint8_t cmd)
  */
 static void ssd1681_write_data(uint8_t data)
 {
+    ssd1681_set_spi_mode_and_clk(&g_ssd1681.config);  /* Ensure correct SPI mode is set */
     if (g_ssd1681.config.spi_mode == SSD1681_SPI_3WIRE) {
         g_ssd1681.dc_state = 1;  /* Data mode */
     } else {
@@ -119,6 +122,7 @@ static void ssd1681_write_data(uint8_t data)
  */
 static void ssd1681_write_data_buf(const uint8_t *data, uint16_t len)
 {
+    ssd1681_set_spi_mode_and_clk(&g_ssd1681.config);  /* Ensure correct SPI mode is set */
     if (g_ssd1681.config.spi_mode == SSD1681_SPI_3WIRE) {
         g_ssd1681.dc_state = 1;
     } else {
@@ -226,6 +230,33 @@ void ssd1681_get_default_config_3wire(ssd1681_config_t *config)
     config->spi_baudrate = 4000000;
 }
 
+static void ssd1681_set_spi_mode_and_clk(ssd1681_config_t *config) {
+    if(spi_get_baudrate(g_ssd1681.spi) != config->spi_baudrate){
+        spi_set_baudrate(g_ssd1681.spi, config->spi_baudrate);
+    }
+
+    if (config->spi_mode == SSD1681_SPI_3WIRE) {
+        /* Configure for 9-bit frames */
+        spi_hw_t *spi_hw = spi_get_hw(g_ssd1681.spi);
+        hw_clear_bits(&spi_hw->cr1, SPI_SSPCR1_SSE_BITS);  /* Disable SPI */
+        spi_hw->cr0 = (8 << SPI_SSPCR0_DSS_LSB) |  /* 9-bit (DSS = bits - 1) */
+                      (0 << SPI_SSPCR0_FRF_LSB) |  /* SPI format */
+                      (0 << SPI_SSPCR0_SPO_LSB) |  /* CPOL = 0 */
+                      (0 << SPI_SSPCR0_SPH_LSB);   /* CPHA = 0 */
+        hw_set_bits(&spi_hw->cr1, SPI_SSPCR1_SSE_BITS);  /* Re-enable SPI */
+        // spi_set_format(
+        //         g_ssd1681.spi,          // SPI instance (spi0 or spi1)
+        //         9,                      // data_bits: 9 (valid range 4–16)
+        //         SPI_CPOL_0,             // clock polarity = 0 (matches your original SPO=0)
+        //         SPI_CPHA_0,             // clock phase = 0     (matches your original SPH=0)
+        //         SPI_MSB_FIRST           // order: MSB first (standard for displays; the 9th bit is sent first as D/C)
+        //     );
+    } else {
+        /* Standard 8-bit SPI */
+        spi_set_format(g_ssd1681.spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    }
+}
+
 /**
  * @brief Initialize the display
  */
@@ -245,20 +276,8 @@ int ssd1681_init(const ssd1681_config_t *config)
     printf("SSD1681: Requested SPI baudrate %u Hz, actual %u Hz\n", config->spi_baudrate, actual_baud);
     if (actual_baud == 0) return -3;
     
-    if (config->spi_mode == SSD1681_SPI_3WIRE) {
-        /* Configure for 9-bit frames */
-        spi_hw_t *spi_hw = spi_get_hw(g_ssd1681.spi);
-        hw_clear_bits(&spi_hw->cr1, SPI_SSPCR1_SSE_BITS);  /* Disable SPI */
-        spi_hw->cr0 = (8 << SPI_SSPCR0_DSS_LSB) |  /* 9-bit (DSS = bits - 1) */
-                      (0 << SPI_SSPCR0_FRF_LSB) |  /* SPI format */
-                      (0 << SPI_SSPCR0_SPO_LSB) |  /* CPOL = 0 */
-                      (0 << SPI_SSPCR0_SPH_LSB);   /* CPHA = 0 */
-        hw_set_bits(&spi_hw->cr1, SPI_SSPCR1_SSE_BITS);  /* Re-enable SPI */
-    } else {
-        /* Standard 8-bit SPI */
-        spi_set_format(g_ssd1681.spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-    }
-    
+    ssd1681_set_spi_mode_and_clk(&g_ssd1681.config);  /* Set initial SPI mode and clock */
+
     /* Configure GPIO pins */
     gpio_set_function(config->pin_mosi, GPIO_FUNC_SPI);
     gpio_set_function(config->pin_sck, GPIO_FUNC_SPI);

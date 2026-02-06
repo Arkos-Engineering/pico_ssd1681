@@ -128,6 +128,7 @@ int ssd1681_init(const ssd1681_config_t *config);
  */
 void ssd1681_deinit(void);
 
+
 /**
  * @brief Clear the display
  * @param color Color plane to clear
